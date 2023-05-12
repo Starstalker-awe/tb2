@@ -1,4 +1,5 @@
 from flask import Flask, session, redirect, url_for as url, request, render_template as render, abort
+from werkzeug.middleware.proxy_fix import ProxyFix
 from http.client import HTTPException
 from passlib.hash import argon2
 from datetime import timedelta
@@ -12,7 +13,6 @@ import cs50
 
 
 
-# App config
 app = Flask(__name__)
 
 app.config.update({
@@ -26,6 +26,8 @@ app.config.update({
 })
 
 flask_session.Session(app)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 DB = cs50.SQL("sqlite:///data.db")
 
@@ -55,7 +57,7 @@ def admin_req(func):
 # ====== Begin Route Definitions ======
 
 @app.route('/')
-def index(): return render('')
+def index(): return "<h1>Hello, world</h1>"
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
