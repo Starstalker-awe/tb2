@@ -1,8 +1,10 @@
 #!/bin/sh
+# Remove files that were previously created
 rm genpass.py data.db pass.txt setup.sql 2> /dev/null
-
+# Ensure certbot is installed
 sudo apt install python3-certbot-nginx -y
 
+# Install sqlite3 if not installed
 if ! which sqlite3 > /dev/null; then
 	read -p "sqlite not found! Install? (Y/n) " install
 	if [ "$install" != "n" ]; then
@@ -10,6 +12,7 @@ if ! which sqlite3 > /dev/null; then
 	fi
 fi
 
+# Install python3 if not installed
 if ! which python3 > /dev/null; then
 	read -p "python3 not found! Install? (Y/n) " install
 	if [ "$install" != "n" ]; then
@@ -17,19 +20,24 @@ if ! which python3 > /dev/null; then
 	fi
 fi
 
+# Touch database and run schema file on it
 touch data.db && sqlite3 data.db < schema.sql
 
+# Configure all usage of python; pip installations, password generation, admin user creation in DB
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+# Insert default settings into database
 echo "INSERT INTO setting (name, value) VALUES ('logging_level', 'INFO')" > setup.sql
 sqlite3 data.db < setup.sql
 
-echo "from random import randint; print(''.join(list(map(lambda _:(c:='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')[randint(0,len(c)-1)],[None]*16))))" > genpass.py 
+# Generate random admin password
+echo "from random import randint; print(''.join(list(map(lambda _:(c:='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-=_+,./<>?')[randint(0,len(c)-1)],[None]*16))))" > genpass.py 
 password="$(python3 genpass.py)"
 echo -n "$password" > pass.txt
 
+# Hash password and insert into database
 printf "from helpers.settings import HASH_SETTINGS; from passlib.hash import argon2; print(argon2.using(**HASH_SETTINGS).hash('%s'))" "$password" > genpass.py
 printf "INSERT INTO user (id, username, password_, p_id, controls) VALUES (1, 'admin', '%s', '%s', 1);" $(python3 genpass.py) "$(uuidgen -r)" > create_user.sql
 
@@ -40,6 +48,7 @@ deactivate
 sqlite3 data.db < create_user.sql
 rm -f create_user.sql genpass.py setup.sql 2> /dev/null
 
+# Configure SSL certificate
 if [ ! $1 ]; then
 	read -p "Enter your IP/domain name: " domain
 else
