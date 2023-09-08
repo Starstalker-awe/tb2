@@ -3,6 +3,7 @@ import cs50
 import os
 
 DB = cs50.SQL(f"sqlite:///{os.getcwd()}/data.db")
+CPU_THREADS = len(os.sched_getaffinity(0))
 
 _levels = {
     "INFO": logging.INFO,
