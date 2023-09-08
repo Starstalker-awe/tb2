@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS symbol(
 
 CREATE UNIQUE INDEX IF NOT EXISTS ticker_index ON symbol(symbol);
 
-CREATE TABLE IF NOT EXISTS setting(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	name TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS setting( /* Storage for settings that is entirely dynamic */
+	id INTEGER PRIMARY KEY AUTOINCREMENT, /* Does not require extreme uniqueness */
+	name TEXT NOT NULL, /* Simple name-value method for storing... why tf didn't I just use JSON? */
 	value TEXT NOT NULL
 );
 
