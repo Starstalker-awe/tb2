@@ -1,6 +1,7 @@
 venv/
-data.db
-pass.txt
 
 __pycache__
 */__pycache__
+
+src/node_modules/
+src/bun.lockb
