@@ -1,0 +1,7 @@
+preload = ["./plugins/scss.ts"]
+
+# JSX compiler options
+jsx = "react"
+
+[test]
+smol = true
