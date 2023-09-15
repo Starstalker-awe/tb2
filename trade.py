@@ -6,6 +6,8 @@ import cs50
 import math
 import os
 
+CPU_THREADS = len(os.sched_getaffinity(0))
+
 logging.basicConfig(format=settings.LOGGING_FORMAT)
 logging.getLogger(__name__).setLevel(settings.LOGGING_LEVEL)
 
@@ -39,6 +41,6 @@ class Trader:
 		stocks = [*list(map(lambda s:s[1], settings.DB.execute("SELECT * FROM symbol"))), *stocks]
 		logging.info(f"\tBeginning setup of watcher threads")
 
-		threads = [None] * (c := math.ceil(len(stocks) / settings.CPU_THREADS))
+		threads = [None] * (c := math.ceil(len(stocks) / CPU_THREADS))
 		for i in range(c):
 			threads[i] = threading.Thread(target=WatcherList, args=(stocks[i*c:(i+1)*c],self.run,))

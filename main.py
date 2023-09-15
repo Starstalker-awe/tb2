@@ -7,5 +7,5 @@ logging.basicConfig(format=settings.LOGGING_FORMAT)
 logging.getLogger(__name__).setLevel(settings.LOGGING_LEVEL)
 
 if __name__ == '__main__':
-    socket.run(app, debug=False)
     trader = Trader()
+    socket.run(app, debug=False)

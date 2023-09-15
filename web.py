@@ -1,4 +1,4 @@
-from flask import Flask, session, redirect, url_for as url, request, render_template as render, abort
+from flask import Flask, session, redirect, url_for as url, request, render_template as render, abort, send_from_directory
 from werkzeug.middleware.proxy_fix import ProxyFix
 from http.client import HTTPException
 from passlib.hash import argon2
@@ -14,7 +14,7 @@ import cs50
 
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='src/build/templates')
 
 app.config.update({
 	"TEMPLATES_AUTO_RELOAD": True,
@@ -95,6 +95,10 @@ def new_user():
 @app.route('/api')
 def api():
 	pass
+
+@app.route('/build/<path:path>')
+def send(path):
+	return send_from_directory('src/build', path)
 
 # ====== End API Routes ======
 
