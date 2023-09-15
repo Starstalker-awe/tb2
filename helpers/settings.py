@@ -1,9 +1,15 @@
+from dotenv import dotenv_values as load_env
 import logging
 import cs50
 import os
 
-DB = cs50.SQL(f"sqlite:///{os.getcwd()}/data.db")
-CPU_THREADS = len(os.sched_getaffinity(0))
+wd = os.getcwd().split('/')
+while wd[-1] != 'tb2': wd = wd[0:-1]
+wd = '/'.join(wd)
+
+DB = cs50.SQL(f"sqlite:///{wd}/data.db")
+
+SECRETS = load_env(f"{wd}/.env")
 
 _levels = {
     "INFO": logging.INFO,
