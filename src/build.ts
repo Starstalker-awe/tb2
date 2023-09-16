@@ -1,10 +1,16 @@
 import scssLoader from './plugins/scss';
 import * as fs from 'fs';
 
-for (const folder in ["js", "css"]) {
-    for (const file in fs.readdirSync(`./build/${folder}`)) {
-        fs.unlinkSync(`./build/${folder}/${file}`)
-    }
+const dirs = ["js", "css"];
+for (const dir of dirs) {
+	let tmpdir;
+	if (!fs.existsSync(tmpdir = `./build/${dir}`)) {
+		fs.mkdirSync(tmpdir)
+	} else {
+		for (const file in fs.readdirSync(tmpdir)) {
+			fs.unlinkSync(`${tmpdir}/${file}`)
+		}
+	}
 }
 
 const entrypoints = [
