@@ -9,7 +9,7 @@ wd = '/'.join(wd)
 
 DB = cs50.SQL(f"sqlite:///{wd}/data.db")
 
-SECRETS = load_env(f"{wd}/.env")
+ENV = load_env(f"{wd}/.env")
 
 _levels = {
     "INFO": logging.INFO,

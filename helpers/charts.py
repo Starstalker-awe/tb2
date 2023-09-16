@@ -8,7 +8,7 @@ import settings
 import pause
 import asyncio
 
-CLIENT = StockHistoricalDataClient(api_key=settings.SECRETS["ALPACA_API"], secret_key=settings.SECRETS["ALPACA_SECRET"])
+CLIENT = StockHistoricalDataClient(api_key=settings.ENV["ALPACA_API"], secret_key=settings.ENV["ALPACA_SECRET"])
 
 class Datapoint:
     def __init__(self, timestamp: datetime.datetime, ask_price: float, bid_price: float, **extra):
@@ -45,7 +45,7 @@ class Bar:
 
 class Chart:
     def __init__(self, ticker: str, date: datetime.datetime):
-        self.bars: [Bar] = []
+        self.bars: list[Bar] = []
         self.ticker = ticker
         self.today = [date.year, date.month, date.day]
         self.caught_up = threading.Event()
@@ -87,7 +87,7 @@ class Chart:
                     unit=TimeFrameUnit("Min")
                 )
             ))
-        for (i, bar) in enumerate(data.data[self.ticker]):
+        for i, bar in enumerate(data.data[self.ticker]):
             self.bars[i] = Bar(timestamp=bar.timestamp).close(**bar)
 
         self.caught_up.set()
