@@ -1,5 +1,6 @@
 from helpers import settings, charts
 from contextlib import suppress
+import websocket
 import threading
 import datetime
 import logging
@@ -97,6 +98,11 @@ class Trader:
 	def __init__(self):
 		self.state = threading.Event()
 		self.stocks = settings.DB.execute("SELECT * FROM symbol")
+
+		self.ws = websocket.WebSocketApp(
+			"ws://127.0.0.1:5000",
+			
+		)
 
 	def generate(self, threads: list[threading.Thread] = []):
 		threads = [None] * (c := math.ceil(len(self.stocks) / CPU_THREADS))
