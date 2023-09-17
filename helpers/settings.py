@@ -1,4 +1,5 @@
 from dotenv import dotenv_values as load_env
+from dotmap import DotMap
 import logging
 import cs50
 import os
@@ -9,7 +10,7 @@ wd = '/'.join(wd)
 
 DB = cs50.SQL(f"sqlite:///{wd}/data.db")
 
-ENV = load_env(f"{wd}/.env")
+ENV = DotMap(load_env(f"{wd}/.env"))
 
 _levels = {
     "INFO": logging.INFO,

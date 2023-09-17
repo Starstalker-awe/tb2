@@ -4,7 +4,7 @@ from alpaca.data.requests import StockBarsRequest
 
 import threading
 import datetime
-import settings
+from . import settings
 import pause
 import asyncio
 
