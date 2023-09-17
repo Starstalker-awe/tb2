@@ -1,4 +1,4 @@
-from flask import Flask, session, redirect, url_for as url, request, render_template as render, abort, send_from_directory
+from flask import Flask, session, redirect, url_for as url, request, render_template as render, abort, send_from_directory, Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 from http.client import HTTPException
 from passlib.hash import argon2
@@ -10,7 +10,6 @@ import functools
 import tempfile
 import secrets
 import uuid
-import cs50
 
 
 
@@ -101,6 +100,26 @@ def send(path):
 	return send_from_directory('src/build', path)
 
 # ====== End API Routes ======
+
+# ====== Begin socketio Routes ======
+
+@socket.on('connect')
+def sock_connect(): pass
+
+# ====== Internal socketio Handlers ======
+
+def internal(func):
+	@functools.wraps(func)
+	def deced(data):
+		if data['auth'] != settings.ENV.INTERNAL_API_KEY:
+			flask_socketio.disconnect()
+		else: func(data)
+	return deced
+
+# trade.py is the only authorized user of the /internal namespace
+@socket.on('some event', namespace='/internal')
+
+# ====== End socketio Routes ======
 
 @app.errorhandler(HTTPException)
 def httperrhandler(err):
