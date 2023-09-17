@@ -1,7 +1,9 @@
-from helpers import settings, charts
+import helpers
 from contextlib import suppress
-import websocket
+from dotmap import DotMap
+import socketio
 import threading
+import functools
 import datetime
 import logging
 import asyncio
@@ -10,8 +12,8 @@ import os
 
 CPU_THREADS = len(os.sched_getaffinity(0))
 
-logging.basicConfig(format=settings.LOGGING_FORMAT)
-logging.getLogger(__name__).setLevel(settings.LOGGING_LEVEL)
+logging.basicConfig(format=helpers.settings.LOGGING_FORMAT)
+logging.getLogger(__name__).setLevel(helpers.settings.LOGGING_LEVEL)
 
 
 class Watcher:
@@ -19,12 +21,12 @@ class Watcher:
 		self._task = None
 		self._starter = trigger
 		self._killer = killer
-		
+
 		self.uid = i
 		self.ticker = ticker
 		self.interval = interval
 		self.running = False
-		self.chart = charts.Chart(ticker, date=datetime.datetime.utcnow())
+		self.chart = helpers.charts.Chart(ticker, date=datetime.datetime.utcnow())
 
 		asyncio.run(self.handler())
 		
@@ -37,7 +39,7 @@ class Watcher:
 		self._killer.wait()
 		self.stop()
 
-	def pass_data(self, data: charts.Datapoint): self.chart.add(data)
+	def pass_data(self, data: helpers.charts.Datapoint): self.chart.add(data)
 
 	async def start(self):
 		if not self.running:
@@ -78,34 +80,25 @@ class WatcherList:
 		self.killer.wait()
 		for i, ticker in enumerate(self.tickers): self._killers[i].set()
 
-
-
-
-class Trader:
-	def __init__(self, state: threading.Event, stocks: list[str] = [], threads: list[threading.Thread] = []):
-		self.starter = threading.Event()
-
-		stocks = [*list(map(lambda s:s[1], settings.DB.execute("SELECT * FROM symbol"))), *stocks]
-		logging.info(f"\tBeginning setup of watcher threads")
-
-		threads = [None] * (c := math.ceil(len(stocks) / CPU_THREADS))
-		for i in range(c):
-			threads[i] = threading.Thread(target=WatcherList, args=(stocks[i*c:(i+1)*c],self.starter,))
-
-		return self
 	
 class Trader:
 	def __init__(self):
 		self.state = threading.Event()
-		self.stocks = settings.DB.execute("SELECT * FROM symbol")
+		self.stocks = helpers.settings.DB.execute("SELECT * FROM symbol")
 
-		self.ws = websocket.WebSocketApp(
-			"ws://127.0.0.1:5000",
-			
-		)
+		self.ws = socketio.Client()
 
 	def generate(self, threads: list[threading.Thread] = []):
 		threads = [None] * (c := math.ceil(len(self.stocks) / CPU_THREADS))
-		for i in range(c):
-			threads[i] = threading.Thread(target=WatcherList, args=(self.stocks[i*c:(i+1)*c],self.state,))
+		for i in range(c): threads[i] = threading.Thread(target=WatcherList, args=(self.stocks[i*c:(i+1)*c],self.state,))
+		
+		self.setup_socket_routes(self.ws)
+		self.ws.connect("ws://127.0.0.1:5000", namespaces='/internal')		
+		
 		for thread in threads: thread.start()
+
+	def setup_socket_routes(socket: socketio.Client):
+		def verified(data: object): DotMap({'auth': helpers.settings.ENV.INTERNAL_API_KEY, 'data': data})
+
+		@socket.event
+		def connect(): socket.emit("auth", helpers.settings.ENV.INTERNAL_API_KEY)
