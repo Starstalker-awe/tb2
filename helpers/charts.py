@@ -2,7 +2,7 @@ from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.requests import StockBarsRequest
 
 from dotmap import DotMap
-from . import settings
+import settings
 import threading
 import datetime
 import asyncio
@@ -55,6 +55,7 @@ class Chart:
 
         if datetime.datetime.utcnow().replace(second=0, microsecond=0) != self._MARKET_OPEN:
             asyncio.run(self.fill_bars(datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(minutes=1)))
+            threading.Thread(target=self.fill_bars, args=[datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(minutes=1)])
         else: self.caught_up.set()
 
         for i in range(7):
@@ -82,8 +83,7 @@ class Chart:
     
     def group(self, length: int):
         for group in range(math.ceil(len(self.bars) / length)):
-            tg = self.bars[length*group:length*(group+1)]
-            tg = list(map(lambda t:t.data(), tg))
+            tg = list(map(lambda t:t.data(), self.bars[length*group:(length+1)*group]))
             
             high = max(list(map(lambda t:t.high, tg)))
             low = min(list(map(lambda t:t.low, tg)))
@@ -104,8 +104,8 @@ class Chart:
                 if count == 0:
                     return self.bars[i]
 
-    async def fill_bars(self, wait_til: datetime.datetime):
-        await pause.until(wait_til + datetime.timdeelta(minutes=15))
+    def fill_bars(self, wait_til: datetime.datetime):
+        pause.until(wait_til + datetime.timdeelta(minutes=15))
         data = settings.HIST_DATA_CLIENT.get_stock_bars(StockBarsRequest(
                 self.ticker,
                 start=self._MARKET_OPEN + datetime.timedelta(minutes=1),
