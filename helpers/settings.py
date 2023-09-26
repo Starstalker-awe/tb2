@@ -1,3 +1,4 @@
+from alpaca.data.historical.stock import StockHistoricalDataClient
 from dotenv import dotenv_values as load_env
 from dotmap import DotMap
 import logging
@@ -11,6 +12,8 @@ wd = '/'.join(wd)
 DB = cs50.SQL(f"sqlite:///{wd}/data.db")
 
 ENV = DotMap(load_env(f"{wd}/.env"))
+
+HIST_DATA_CLIENT = StockHistoricalDataClient(api_key=ENV.ALPACA_API, secret_key=ENV.ALPACA_SECRET)
 
 _levels = {
     "INFO": logging.INFO,

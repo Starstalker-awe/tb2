@@ -1,14 +1,13 @@
-from alpaca.data.historical.stock import StockHistoricalDataClient
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.requests import StockBarsRequest
 
+from dotmap import DotMap
+from . import settings
 import threading
 import datetime
-from . import settings
-import pause
 import asyncio
-
-CLIENT = StockHistoricalDataClient(api_key=settings.ENV["ALPACA_API"], secret_key=settings.ENV["ALPACA_SECRET"])
+import pause
+import math
 
 class Datapoint:
     def __init__(self, timestamp: datetime.datetime, ask_price: float, bid_price: float, **extra):
@@ -16,15 +15,11 @@ class Datapoint:
         self.ap = ask_price
         self.bp = bid_price
 
-        return self
-
 class Bar:
     def __init__(self, timestamp: datetime.datetime):
         self.closed = False
-        # Placeholders to be used in functions
+        self.timestamp = timestamp
         self._high, self._low, self._open, self._close = [None] * 4
-
-        return self
 
     def close(self, high = None, low = None, open = None, close = None): # Clear datapoints when minute has passed
         self._high = high or self.high()
@@ -36,12 +31,18 @@ class Bar:
         self.closed = True
 
         return self
-    def add(self, data: Datapoint): self.datapoints.append(data)
+
+    def add(self, data: Datapoint): self.datapoints.append(data) if not self.closed else None
+
+    def percent(self, lvl: int): self.low() + ((self.high() - self.low()) * (100 / lvl))
+
+    def change(self): abs((self.close() - self.open()) if self.close() > self.open() else (self.open() - self.close()))
 
     def high(self): self._high or max(list(map(lambda d:d.bp, self.datapoints)))
     def low(self): self._low or min(list(map(lambda d:d.ap, self.datapoints)))
     def open(self): self._open or self.datapoints[0].bp
     def close(self): self._close or self.datapoints[-1].bp
+    def data(self): DotMap({'high': self.high(), 'low': self.low(), 'open': self.open(), 'close': self.close()})
 
 class Chart:
     def __init__(self, ticker: str, date: datetime.datetime):
@@ -66,19 +67,46 @@ class Chart:
                         tzinfo=datetime.timezone.utc # Keep everything in UTC to stay sane!
                     )))
 
-        return self
+    def add(self, data: list[Datapoint | Bar], type: Datapoint | Bar = Datapoint):
+        for point in data:
+            time = point.timestamp - datetime.timedelta(hours=(9 + 4))
+            i = (time.hours * 60) + time.minutes
+            if type is Datapoint:
+                self.bars[i].add(point)
+            elif type is Bar:
+                self.bars[i] = point
+            if i > 0: 
+                if not self.bars[i - 1].closed: self.bars[i - 1].close()
 
-    def add(self, data: Datapoint):
-        time = data.timestamp - datetime.timedelta(hours=(9 + 4))
-        self.bars[index := (time.hours * 60 + time.minutes)].add(data)
-        if index > 0: 
-            if not self.bars[index - 1].closed: self.bars[index - 1].close()
-
         return self
+    
+    def group(self, length: int):
+        for group in range(math.ceil(len(self.bars) / length)):
+            tg = self.bars[length*group:length*(group+1)]
+            tg = list(map(lambda t:t.data(), tg))
+            
+            high = max(list(map(lambda t:t.high, tg)))
+            low = min(list(map(lambda t:t.low, tg)))
+
+            return DotMap({'high': high, 'low': low, 'open': tg[0].open, 'close': tg[-1].close})
+
+    def previous_green(self, count = 1):
+        for i in range(len(self.bars), 0, -1):
+            if self.bars[i].close() > self.bars[i].open():
+                count = count - 1
+                if count == 0:
+                    return self.bars[i]
+
+    def previous_red(self, count = 1):
+        for i in range(len(self.bars), 0, -1):
+            if self.bars[i].close() < self.bars[i].open():
+                count = count - 1
+                if count == 0:
+                    return self.bars[i]
 
     async def fill_bars(self, wait_til: datetime.datetime):
         await pause.until(wait_til + datetime.timdeelta(minutes=15))
-        data = CLIENT.get_stock_bars(StockBarsRequest(
+        data = settings.HIST_DATA_CLIENT.get_stock_bars(StockBarsRequest(
                 self.ticker,
                 start=self._MARKET_OPEN + datetime.timedelta(minutes=1),
                 end=datetime.datetime.utcnow(),
