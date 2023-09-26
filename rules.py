@@ -1,25 +1,71 @@
-bars, this, previous_red, previous_green, shares, get = None
-def yesterday():return 0
-def buy():return 0
-def sell():return 0
+bars, this, previous_red, previous_green, shares, i = None
+def yesterday(): get().close
+def buy(shares: int, lvl: int = None): shares, lvl
+def sell(shares: int, lvl: int = None): shares, lvl
+def cancel(): None
+def get(ticker: str): ticker
+def wait(time: int): time
+def kill_branch(): None
+
+
+class if_gap_up:
+    def running():
+        wait(10)
+        if bars[0].current > yesterday().close: # Still up
+            if bars[i].current > bars[0].open:
+                sell(shares, bars[0].open - 0.01)
+                kill_branch()
+        else: # Went below, within 10s
+            sell(shares, bars[i].current)
+            kill_branch()
+
+    def side():
+        wait(13 * 60) # after 13 minutes
+        cancel()
+        kill_branch()
+
+
+class if_gap_down:
+    def running():
+        wait(10)
+        if bars[0].current < yesterday().close: # Still down
+            if bars[i].current < bars[0].open:
+                buy(shares, bars[0].open + 0.01)
+                kill_branch()
+        else: # Went above, within 10s
+            buy(shares, bars[i].current)
+            kill_branch()
+
+    def side():
+        wait(13 * 60) # after 13 minutes
+        cancel()
+        kill_branch()
+
+
+class normal:
+    def running(minutes = 13):
+        if (bars[i - 2].close > previous_red.percent(60) or bars[i - 1].close > previous_red.percent(60)) and bars[i].current > bars[i].open:
+            # if big red, then green > 60%, then red close < 60%: wait 'til red open
+            buy(200 if shares == 0 else 100)
+
+
+
+
+
+
+
+
+
+
+
+
 
 # == BUY RULES ==
-if bars[0].current > yesterday(this).close: # Gaps up
-    if bars[0].current > bars[0].open: # Above open
-        buy(200)
-else: # Gaps down
-    if len(bars) == 1: # First bar
-        if bars[0].price > bars[0].open and get("SPY").current > get("SPY").open: # If goes above open in first bar
-            buy(200)
-    elif get(this).current > bars[0].open: # Goes above open at any time
-        buy(200)
 
 # Moving upwards, above previous red
-if (bars[-3].close > previous_red.percent(60) or bars[-2].close > previous_red.percent(60)) and bars[-1].current > bars[-1].open:
-    buy(200 if not shares(this) else 100)
 
-if shares(this) > 0:
-    if get(this).current > bars[-2].close:
+if shares > 0:
+    if bars[i].current > bars[i - 1].close:
         buy(100)
 # == BUY RULES ==
 
