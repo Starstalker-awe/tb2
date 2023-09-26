@@ -118,6 +118,8 @@ def internal(func):
 
 # trade.py is the only authorized user of the /internal namespace
 @socket.on('some event', namespace='/internal')
+def some_event(data):
+	pass
 
 # ====== End socketio Routes ======
 
