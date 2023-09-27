@@ -10,11 +10,10 @@ def kill_branch(): None
 
 class if_gap_up:
     def running():
-        wait(10)
-        if bars[0].current > yesterday().close: # Still up
-            if bars[i].current > bars[0].open:
-                sell(shares, bars[0].open - 0.01)
-                kill_branch()
+        wait(60)
+        if bars[i].current > bars[0].open:
+            sell(shares, bars[0].open - 0.01)
+            kill_branch()
         else: # Went below, within 10s
             sell(shares, bars[i].current)
             kill_branch()
