@@ -1,8 +1,8 @@
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.requests import StockBarsRequest
 
+from helpers import settings
 from dotmap import DotMap
-import settings
 import threading
 import datetime
 import asyncio
