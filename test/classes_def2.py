@@ -7,7 +7,7 @@ class Stoppable:
 		self.tasks: list[multiprocessing.Process] = []
 
 	def stoppable(self, func):
-		def __handler(strtr, stpr, *a, **ka):
+		def __handler(strtr: threading.Event, stpr: threading.Event, *a, **ka):
 			self.tasks.append(multiprocessing.Process(target=func))
 			id = len(self.tasks) - 1
 
